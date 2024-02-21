@@ -1,0 +1,15 @@
+{
+  "name": "amazondetails",
+  "version": "1.0.0",
+  "description": "scrapping product details",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "mano satpathy",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2",
+    "puppeteer": "^22.1.0"
+  }
+}
