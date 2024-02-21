@@ -12,8 +12,6 @@ app.get("/", async (req, res) => {
       res.status(400).json({ message: "invalid or keyword not provided" });
     }
 
-    //   code start here
-
     const browser = await puppeteer.launch();
     const page = await browser.newPage();
     await page.goto("https://amazon.in");
@@ -30,48 +28,51 @@ app.get("/", async (req, res) => {
     });
 
     const productDetails = productLinks.map(async (productLink) => {
-      const productPage = await browser.newPage();
-      await productPage.goto(productLink);
+      try {
+        const productPage = await browser.newPage();
+        await productPage.goto(productLink);
 
-      const data = await productPage.evaluate(() => {
-        const name =
-          document
-            .querySelector(".a-size-large.product-title-word-break")
-            ?.textContent.trim() || "Name not found";
-        const description =
-          document.querySelector(".a-list-item")?.textContent.trim() ||
-          "Description not found";
-        const rating =
-          document
-            .querySelector(".a-size-base.a-color-base")
-            ?.textContent.trim() || "Rating not found";
-        const reviews =
-          document
-            .querySelector("#acrCustomerReviewText")
-            ?.textContent.trim() || "Reviews not found";
-        const price =
-          document.querySelector(".a-price-whole")?.textContent.trim() ||
-          "Price not found";
+        const data = await productPage.evaluate(() => {
+          const name =
+            document
+              .querySelector(".a-size-large.product-title-word-break")
+              ?.textContent.trim() || "Name not found";
+          const description =
+            document
+              .querySelector("#productDescription p span")
+              ?.textContent.trim() || "Description not found";
+          const rating =
+            document
+              .querySelector(
+                ".a-icon.a-icon-star.a-star-4.cm-cr-review-stars-spacing-big span"
+              )
+              ?.textContent.trim() || "Rating not found";
+          const reviews =
+            document
+              .querySelector("#acrCustomerReviewText")
+              ?.textContent.trim() || "Reviews not found";
+          const price =
+            document.querySelector(".a-price-whole")?.textContent.trim() ||
+            "Price not found";
 
-        return { name, description, rating, reviews, price };
-      });
+          return { name, description, rating, reviews, price };
+        });
 
-      await productPage.close();
-      return data;
+        await productPage.close();
+        return data;
+      } catch (error) {
+        console.log(error);
+      }
     });
 
     const productData = await Promise.all(productDetails);
-    // console.log(productLinks)
-    console.log(productData);
+    // console.log(productData);
     await browser.close();
     res.status(200).json({ productDetail: productData });
   } catch (err) {
     console.log("unable to fetch details", err);
   }
 });
-
-//code ends here
-// });
 
 app.listen(port, () => {
   console.log(`app listening on port ${port}`);
