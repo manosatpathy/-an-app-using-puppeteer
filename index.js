@@ -29,6 +29,7 @@ app.get("/", async (req, res) => {
 
     const productDetails = productLinks.map(async (productLink) => {
       try {
+        console.log("Fetching data for product");
         const productPage = await browser.newPage();
         await productPage.goto(productLink);
 
@@ -47,7 +48,7 @@ app.get("/", async (req, res) => {
                 ".a-icon.a-icon-star.a-star-4.cm-cr-review-stars-spacing-big span"
               )
               ?.textContent.trim() || "Rating not found";
-          const reviews =
+          const noOfReviews =
             document
               .querySelector("#acrCustomerReviewText")
               ?.textContent.trim() || "Reviews not found";
@@ -55,18 +56,46 @@ app.get("/", async (req, res) => {
             document.querySelector(".a-price-whole")?.textContent.trim() ||
             "Price not found";
 
-          return { name, description, rating, reviews, price };
+          return { name, description, rating, noOfReviews, price };
         });
+
+        console.log("Data fetched for product");
+
+        const seeAllReviewsLink = await productPage.$(
+          ".a-link-emphasis.a-text-bold"
+        );
+        if (seeAllReviewsLink) {
+          await seeAllReviewsLink.click();
+          await productPage.waitForSelector(".a-row.a-spacing-small.review-data span span");
+
+          console.log("Fetching reviews for product");
+
+          const topReviews = await productPage.evaluate(() => {
+            const reviews = document.querySelectorAll(
+              ".a-row.a-spacing-small.review-data span span"
+            );
+            const user = document.querySelectorAll(".a-profile-content span");
+            const topReviewsData = [];
+            for (let i = 0; i < reviews.length; i++) {
+              topReviewsData.push({
+                customer: user[i].textContent.trim() || "Amazon user",
+                review: reviews[i].textContent.trim(),
+              });
+            }
+            return topReviewsData;
+          });
+          data.topReviews = topReviews;
+        }
+        console.log("Reviews fetched for product");
 
         await productPage.close();
         return data;
       } catch (error) {
-        console.log(error);
+        console.log(`Error fetching data`, error);
       }
     });
 
     const productData = await Promise.all(productDetails);
-    // console.log(productData);
     await browser.close();
     res.status(200).json({ productDetail: productData });
   } catch (err) {
